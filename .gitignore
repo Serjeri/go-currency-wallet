@@ -1,0 +1,74 @@
+# Файлы сборки и бинарники
+/bin/
+*.exe
+*.exe~
+*.so
+*.dll
+*.dylib
+*.out
+/build/
+gw-currency-wallet/gw-currency-wallet
+gw-exchanger/gw-exchanger
+gw-notification/gw-notification
+
+# Папка зависимостей Go
+/vendor/
+/go.sum
+/go/pkg/
+
+# Файлы IDE и редакторов
+.idea/
+.vscode/
+*.swp
+*.swo
+*.code-workspace
+
+# Логи и временные файлы
+*.log
+*.tmp
+*.test
+*.temp
+
+# Конфигурационные файлы окружения
+.env
+.env.local
+.env*.local
+
+# Автогенерируемые файлы
+.DS_Store
+.DS_Store?
+Thumbs.db
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Go workspace файлы
+go.work
+go.work.sum
+
+# Тестовые покрытия
+coverage.out
+coverage.html
+
+# Build output
+dist/
+*.a
+
+# Debug files
+debug
+*.debug
+
+# Test output
+coverage.txt
+profile.out
+
+
+# Local config files
+**/internal/config/*.local.*
+**/internal/config/local.*
+
+# Database files
+*.db
+*.sqlite
+*.dump
