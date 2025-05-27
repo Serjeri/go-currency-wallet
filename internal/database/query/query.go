@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gw-currency-wallet/internal/database"
 	"gw-currency-wallet/internal/models"
+	"strings"
 )
 
 type Repository struct {
@@ -15,19 +16,29 @@ func NewRepository(client database.Client) *Repository {
 	return &Repository{client: client}
 }
 
-func (r *Repository) RegistrUser(ctx context.Context, user models.User) (int, error) {
-	var id int
-	err := r.client.QueryRow(
-		ctx,
-		`INSERT INTO tasks (title, description) VALUES ($1, $2) RETURNING id`,
-		user.Name, user.Password, user.Email,
-	).Scan(&id)
+func (r *Repository) RegistrUser(ctx context.Context, user models.User) (bool, error) {
+// TODO переделать на swich
+	var existingName, existingEmail string
+	err := r.client.QueryRow(ctx, `SELECT name, email FROM users WHERE name = $1, email = $2`,
+		strings.ToUpper(user.Name), strings.ToUpper(user.Email)).Scan(&existingName, &existingEmail)
+
+	if err == nil {
+        return true, nil
+    }
+
+	_, err = r.client.Exec(
+        ctx,
+        `INSERT INTO users (name, password, email) VALUES ($1, $2, $3)`,
+         strings.ToUpper(user.Name),
+         strings.ToUpper(user.Password),
+         strings.ToUpper(user.Email),
+    )
 
 	if err != nil {
-		return 0, fmt.Errorf("failed to create task: %w", err)
+		return false, fmt.Errorf("failed to create task: %w", err)
 	}
 
-	return id, nil
+	return false, nil
 }
 
 // func (r *Repository) GetAllTasks(ctx context.Context) (u []models.Tasks, err error) {
