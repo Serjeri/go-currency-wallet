@@ -17,22 +17,22 @@ func NewRepository(client database.Client) *Repository {
 }
 
 func (r *Repository) RegistrUser(ctx context.Context, user models.User) (bool, error) {
-// TODO переделать на swich
+	// TODO переделать на swich
 	var existingName, existingEmail string
 	err := r.client.QueryRow(ctx, `SELECT name, email FROM users WHERE name = $1, email = $2`,
 		strings.ToUpper(user.Name), strings.ToUpper(user.Email)).Scan(&existingName, &existingEmail)
 
 	if err == nil {
-        return true, nil
-    }
+		return true, nil
+	}
 
 	_, err = r.client.Exec(
-        ctx,
-        `INSERT INTO users (name, password, email) VALUES ($1, $2, $3)`,
-         strings.ToUpper(user.Name),
-         strings.ToUpper(user.Password),
-         strings.ToUpper(user.Email),
-    )
+		ctx,
+		`INSERT INTO users (name, password, email) VALUES ($1, $2, $3)`,
+		strings.ToUpper(user.Name),
+		user.Password,
+		strings.ToUpper(user.Email),
+	)
 
 	if err != nil {
 		return false, fmt.Errorf("failed to create task: %w", err)

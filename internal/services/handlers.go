@@ -27,11 +27,13 @@ func (client *Client) UserRegistr(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
 		return
 	}
+
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Password hashing failed"})
 		return
 	}
+	
 	user.Password = string(hashedPassword)
 
 	exists, err := client.repository.RegistrUser(context.TODO(), user)
