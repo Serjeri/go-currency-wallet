@@ -2,26 +2,33 @@ package rest
 
 import (
 	"github.com/gin-gonic/gin"
-	"gw-currency-wallet/internal/services"
+	//"gw-currency-wallet/internal/services/auth"
+	"gw-currency-wallet/internal/services/handlers"
 )
 
-func Routers(r *gin.Engine, client *services.Client) {
-	users := r.Group("/api/v1")
-	// wallet := r.Group("/api/v2")
-	// exchange := r.Group("/api/v3")
+func Routers(r *gin.Engine, client *handlers.Client) {
+	api := r.Group("/api/v1")
 
+	publicApi := api.Group("/")
 	{
-		users.POST("/register", client.UserRegistr)
-		// users.POST("/login",)
+		publicApi.POST("/register", client.UserRegistr)
+		// publicApi.POST("/login",)
 	}
-	// {
-	// 	wallet.GET("/balance")
-	// 	wallet.POST("wallet/deposit")
-	// 	wallet.POST("wallet/withdraw")
-	// }
 
+	// privateApi := api.Group("/")
+    // privateApi.Use(auth.r)
 	// {
-	// 	exchange.GET("/exchange/rates")
-	// 	exchange.POST("/exchange")
-	// }
+    //     wallet := privateApi.Group("/wallet")
+    //     {
+    //         wallet.GET("/balance", client.GetBalance)
+    //         wallet.POST("/deposit", client.Deposit)
+    //         wallet.POST("/withdraw", client.Withdraw)
+    //     }
+
+    //     exchange := privateApi.Group("/exchange")
+    //     {
+    //         exchange.GET("/rates", client.GetExchangeRates)
+    //         exchange.POST("/", client.ExchangeCurrency)
+    //     }
+    // }
 }

@@ -4,7 +4,7 @@ import (
 	//"context"
 	"gw-currency-wallet/internal/database"
 	"gw-currency-wallet/internal/database/query"
-	"gw-currency-wallet/internal/services"
+	"gw-currency-wallet/internal/services/handlers"
 	"gw-currency-wallet/internal/transport/rest"
 	"log"
 	"github.com/gin-gonic/gin"
@@ -20,7 +20,7 @@ func main() {
 	// defer conn.Close(context.Background())
 
 	repo := query.NewRepository(conn)
-	handl := services.NewClient(repo)
+	handl := handlers.NewClient(repo)
 
 	rest.Routers(router, handl)
 
