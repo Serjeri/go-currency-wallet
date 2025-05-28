@@ -53,16 +53,6 @@ func (client *Client) UserRegistr(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie(
-		"auth_token",
-		token,
-		3600,
-		"/",
-		"localhost",
-		false,
-		true,
-	)
-
 	builder.WriteString("Bearer ")
 	builder.WriteString(token)
 	authHeader := builder.String()

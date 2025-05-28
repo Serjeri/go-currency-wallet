@@ -16,19 +16,19 @@ func Routers(r *gin.Engine, client *handlers.Client) {
 	}
 
 	// privateApi := api.Group("/")
-    // privateApi.Use(auth.r)
+	// privateApi.Use(auth.AuthenticateMiddleware)
 	// {
-    //     wallet := privateApi.Group("/wallet")
-    //     {
-    //         wallet.GET("/balance", client.GetBalance)
-    //         wallet.POST("/deposit", client.Deposit)
-    //         wallet.POST("/withdraw", client.Withdraw)
-    //     }
+	//     wallet := privateApi.Group("/wallet")
+	//     {
+	//         wallet.GET("/balance", client.GetBalance)
+	//         wallet.POST("/deposit", client.Deposit)
+	//         wallet.POST("/withdraw", client.Withdraw)
+	//     }
 
-    //     exchange := privateApi.Group("/exchange")
-    //     {
-    //         exchange.GET("/rates", client.GetExchangeRates)
-    //         exchange.POST("/", client.ExchangeCurrency)
-    //     }
-    // }
+	//     exchange := privateApi.Group("/exchange")
+	//     {
+	//         exchange.GET("/rates", client.GetExchangeRates)
+	//         exchange.POST("/", client.ExchangeCurrency)
+	//     }
+	// }
 }
