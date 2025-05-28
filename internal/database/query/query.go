@@ -6,6 +6,7 @@ import (
 	"gw-currency-wallet/internal/database"
 	"gw-currency-wallet/internal/models"
 	"strings"
+	"errors"
 )
 
 type Repository struct {
@@ -16,56 +17,73 @@ func NewRepository(client database.Client) *Repository {
 	return &Repository{client: client}
 }
 
-func (r *Repository) RegistrUser(ctx context.Context, user models.User) (bool, error) {
-	// TODO переделать на swich
-	var existingName, existingEmail string
-	err := r.client.QueryRow(ctx, `SELECT name, email FROM users WHERE name = $1, email = $2`,
-		strings.ToUpper(user.Name), strings.ToUpper(user.Email)).Scan(&existingName, &existingEmail)
+func (r *Repository) RegistrUser(ctx context.Context, user models.User) (int, error) {
+	tx, err := r.client.Begin(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		}
+	}()
 
-	if err == nil {
-		return true, nil
+	var exists bool
+	err = tx.QueryRow(ctx,
+		`SELECT EXISTS(SELECT 1 FROM users WHERE name = $1 OR email = $2)`,
+		strings.ToUpper(user.Name),
+		strings.ToUpper(user.Email),
+	).Scan(&exists)
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to check user existence: %w", err)
 	}
 
-	_, err = r.client.Exec(
+	if exists {
+		return 0, fmt.Errorf("user with this name or email already exists")
+	}
+
+	var id int
+	err = tx.QueryRow(
 		ctx,
-		`INSERT INTO users (name, password, email) VALUES ($1, $2, $3)`,
+		`INSERT INTO users (name, password, email) VALUES ($1, $2, $3) RETURNING id`,
 		strings.ToUpper(user.Name),
 		user.Password,
 		strings.ToUpper(user.Email),
-	)
+	).Scan(&id)
 
 	if err != nil {
-		return false, fmt.Errorf("failed to create task: %w", err)
+		return 0, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	return false, nil
+	_, err = tx.Exec(ctx,
+		`INSERT INTO wallet (user_id, usd, rub, eur) VALUES ($1, 0.0, 0.0, 0.0)`,
+		id,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create wallet: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return 0, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return id, nil
 }
 
-// func (r *Repository) GetAllTasks(ctx context.Context) (u []models.Tasks, err error) {
-// 	rows, err := r.client.Query(ctx, `SELECT * FROM tasks`)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func (r *Repository) GetUser(ctx context.Context, user models.Login) (int, error) {
+	var dbPassword string
+	var id int
 
-// 	tasks := make([]models.Tasks, 0)
+	r.client.QueryRow(ctx, `SELECT id, password FROM users WHERE name = $1`,
+		strings.ToUpper(user.Name)).Scan(&id, &dbPassword)
 
-// 	for rows.Next() {
-// 		var task models.Tasks
+	if dbPassword != user.Password {
+		return 0, errors.New("username or password is incorrect")
+	}
 
-// 		err = rows.Scan(&task.Id, &task.Title, &task.Description, &task.Status, &task.Created_at, &task.Updated_at)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-
-// 		tasks = append(tasks, task)
-// 	}
-
-// 	if err = rows.Err(); err != nil {
-// 		return nil, err
-// 	}
-
-// 	return tasks, nil
-// }
+	return id, nil
+}
 
 // func (r *Repository) UpdateTask(ctx context.Context, id int, title string, description string) (bool, error) {
 // 	var exists bool

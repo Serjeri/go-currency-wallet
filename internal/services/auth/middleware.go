@@ -1,16 +1,18 @@
 package auth
 
 import (
-	"github.com/golang-jwt/jwt/v5"
 	"net/http"
+	"strings"
+
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/gin-gonic/gin"
 )
 
 func AuthenticateMiddleware(c *gin.Context) {
 
-	tokenString, err := c.Cookie("auth_token")
-	if err != nil {
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
         c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
             "error": "Authentication required",
             "redirect": "/login",
@@ -18,9 +20,16 @@ func AuthenticateMiddleware(c *gin.Context) {
         return
     }
 
+	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+    if tokenString == "" {
+        c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+            "error": "Token is missing",
+        })
+        return
+    }
+
 	token, err := verifyToken(tokenString)
     if err != nil {
-    	c.SetCookie("auth_token", "", -1, "/", "", false, true)
         c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
             "error": "Invalid or expired token",
             "redirect": "/login",
@@ -31,5 +40,6 @@ func AuthenticateMiddleware(c *gin.Context) {
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {
             c.Set("sub", claims)
         }
+
 	c.Next()
 }
