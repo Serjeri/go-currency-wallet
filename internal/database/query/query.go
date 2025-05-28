@@ -6,6 +6,7 @@ import (
 	"gw-currency-wallet/internal/database"
 	"gw-currency-wallet/internal/models"
 	"strings"
+	"errors"
 )
 
 type Repository struct {
@@ -18,29 +19,29 @@ func NewRepository(client database.Client) *Repository {
 
 func (r *Repository) RegistrUser(ctx context.Context, user models.User) (int, error) {
 	tx, err := r.client.Begin(ctx)
-    if err != nil {
-        return 0, fmt.Errorf("failed to begin transaction: %w", err)
-    }
-    defer func() {
-        if err != nil {
-            tx.Rollback(ctx)
-        }
-    }()
+	if err != nil {
+		return 0, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		}
+	}()
 
 	var exists bool
-    err = tx.QueryRow(ctx,
-        `SELECT EXISTS(SELECT 1 FROM users WHERE name = $1 OR email = $2)`,
-        strings.ToUpper(user.Name),
-        strings.ToUpper(user.Email),
-    ).Scan(&exists)
+	err = tx.QueryRow(ctx,
+		`SELECT EXISTS(SELECT 1 FROM users WHERE name = $1 OR email = $2)`,
+		strings.ToUpper(user.Name),
+		strings.ToUpper(user.Email),
+	).Scan(&exists)
 
-    if err != nil {
-        return 0, fmt.Errorf("failed to check user existence: %w", err)
-    }
+	if err != nil {
+		return 0, fmt.Errorf("failed to check user existence: %w", err)
+	}
 
-    if exists {
-        return 0, fmt.Errorf("user with this name or email already exists")
-    }
+	if exists {
+		return 0, fmt.Errorf("user with this name or email already exists")
+	}
 
 	var id int
 	err = tx.QueryRow(
@@ -52,20 +53,20 @@ func (r *Repository) RegistrUser(ctx context.Context, user models.User) (int, er
 	).Scan(&id)
 
 	if err != nil {
-		return 0, fmt.Errorf("failed to create task: %w", err)
+		return 0, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	 _, err = tx.Exec(ctx,
-        `INSERT INTO wallet (user_id, usd, rub, eur) VALUES ($1, 0.0, 0.0, 0.0)`,
-        id,
-    )
-    if err != nil {
-        return 0, fmt.Errorf("failed to create wallet: %w", err)
-    }
+	_, err = tx.Exec(ctx,
+		`INSERT INTO wallet (user_id, usd, rub, eur) VALUES ($1, 0.0, 0.0, 0.0)`,
+		id,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create wallet: %w", err)
+	}
 
-    if err := tx.Commit(ctx); err != nil {
-        return 0, fmt.Errorf("failed to commit transaction: %w", err)
-    }
+	if err := tx.Commit(ctx); err != nil {
+		return 0, fmt.Errorf("failed to commit transaction: %w", err)
+	}
 
 	return id, nil
 }
@@ -74,15 +75,11 @@ func (r *Repository) GetUser(ctx context.Context, user models.Login) (int, error
 	var dbPassword string
 	var id int
 
-	err := r.client.QueryRow(ctx, `SELECT id, password FROM users WHERE name = $1`,
+	r.client.QueryRow(ctx, `SELECT id, password FROM users WHERE name = $1`,
 		strings.ToUpper(user.Name)).Scan(&id, &dbPassword)
 
-	if err == nil {
-		return 0, err
-	}
-
 	if dbPassword != user.Password {
-		return 0, err
+		return 0, errors.New("username or password is incorrect")
 	}
 
 	return id, nil
