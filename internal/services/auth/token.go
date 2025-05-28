@@ -2,7 +2,6 @@ package auth
 
 import (
 	"fmt"
-	"gw-currency-wallet/internal/models"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -10,9 +9,9 @@ import (
 
 var secretKey = []byte("your-secret-key")
 
-func CreateToken(user models.User) (string, error) {
+func CreateToken(id int) (string, error) {
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": user.Name,
+		"sub": id,
 		"iss": "app",
 		"exp": time.Now().Add(time.Minute).Unix(),
 		"iat": time.Now().Unix(),

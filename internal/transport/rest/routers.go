@@ -12,7 +12,7 @@ func Routers(r *gin.Engine, client *handlers.Client) {
 	publicApi := api.Group("/")
 	{
 		publicApi.POST("/register", client.UserRegistr)
-		// publicApi.POST("/login",)
+		publicApi.POST("/login", client.AuthenticateUser)
 	}
 
 	// privateApi := api.Group("/")
