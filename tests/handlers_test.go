@@ -4,13 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
 	"gw-currency-wallet/internal/models"
+	service "gw-currency-wallet/internal/services"
 	"gw-currency-wallet/internal/services/handlers"
 	"gw-currency-wallet/internal/transport/rest"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,17 +22,19 @@ type testRepo struct {
 	err    error
 }
 
-func (t testRepo) GetUser(ctx context.Context, user models.Login) (int, error) {
+// Create implements service.UserRepository.
+func (t testRepo) Create(ctx context.Context, user *models.User) (int, error) {
 	return t.result, nil
 }
 
-func (t testRepo) RegistrUser(ctx context.Context, user models.User) (int, error) {
+// Get implements service.UserRepository.
+func (t testRepo) Get(ctx context.Context, user *models.Login) (int, error) {
 	return t.result, nil
 }
 
 func TestRegisterUser_Validation(t *testing.T) {
 	repo := testRepo{}
-	client := handlers.NewClient(repo)
+	client := service.NewUserService(repo)
 	router := gin.Default()
 	rest.Routers(router, client)
 

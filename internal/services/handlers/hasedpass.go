@@ -1,15 +1,15 @@
 package handlers
 
 import (
-	"github.com/gin-gonic/gin"
+	"errors"
 	"golang.org/x/crypto/bcrypt"
-	"net/http"
 )
 
-func HashedPassword(password string, c *gin.Context) string {
+func HashedPassword(password string) string {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Password hashing failed"})
+		err := errors.New(`password hashing failed`)
+		return err.Error()
 	}
 	return string(hashedPassword)
 }

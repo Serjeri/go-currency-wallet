@@ -18,26 +18,26 @@ func CreateToken(id int) (string, error) {
 	})
 
 	tokenString, err := claims.SignedString(secretKey)
-    if err != nil {
-        return "", err
-    }
+	if err != nil {
+		return "", err
+	}
 
 	return tokenString, nil
 }
 
-func verifyToken(tokenString string) (*jwt.Token, error) {
+func VerifyToken(tokenString string) (*jwt.Token, error) {
 
-    token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-        return secretKey, nil
-    })
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return secretKey, nil
+	})
 
-    if err != nil {
-        return nil, err
-    }
+	if err != nil {
+		return nil, err
+	}
 
-    if !token.Valid {
-        return nil, fmt.Errorf("invalid token")
-    }
+	if !token.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
 
-    return token, nil
+	return token, nil
 }

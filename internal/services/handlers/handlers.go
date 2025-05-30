@@ -2,23 +2,19 @@ package handlers
 
 import (
 	"context"
-	"github.com/gin-gonic/gin"
-	"gw-currency-wallet/internal/database/query"
 	"gw-currency-wallet/internal/models"
-	"gw-currency-wallet/internal/services/auth"
 	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
-type Client struct {
-	repository *query.Repository
+type UserService interface {
+	CreateUser(ctx context.Context, user *models.User) (string, error)
+	GetUser(ctx context.Context, user *models.Login) (string, error)
 }
 
-func NewClient(repository *query.Repository) *Client {
-	return &Client{repository: repository}
-}
-
-func (client *Client) UserRegistr(c *gin.Context) {
+func UserRegistration(c *gin.Context, s UserService) {
 	var user models.User
 	var builder strings.Builder
 
@@ -27,29 +23,14 @@ func (client *Client) UserRegistr(c *gin.Context) {
 		return
 	}
 
-	hashedPassword := HashedPassword(user.Password, c)
-
-	user.Password = hashedPassword
-
-	id, err := client.repository.RegistrUser(context.TODO(), user)
+	users, err := s.CreateUser(context.TODO(), &user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Registration failed"})
-		return
-	}
-
-	if id == 0 {
-		c.JSON(http.StatusConflict, gin.H{"error": "User already exists"})
-		return
-	}
-
-	token, err := auth.CreateToken(id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Token generation failed"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "user with this name or email already exists"})
 		return
 	}
 
 	builder.WriteString("Bearer ")
-	builder.WriteString(token)
+	builder.WriteString(users)
 	authHeader := builder.String()
 
 	c.Header("Authorization", authHeader)
@@ -58,7 +39,7 @@ func (client *Client) UserRegistr(c *gin.Context) {
 	})
 }
 
-func (client *Client) AuthenticateUser(c *gin.Context) {
+func UserAuthenticate(c *gin.Context, s UserService) {
 	var login models.Login
 	var builder strings.Builder
 
@@ -66,24 +47,15 @@ func (client *Client) AuthenticateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
 		return
 	}
-	hashedPassword := HashedPassword(login.Password, c)
 
-	login.Password = hashedPassword
-
-	id, err := client.repository.GetUser(context.TODO(), login )
+	users, err := s.GetUser(context.TODO(), &login)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
-		return
-	}
-
-	token, err := auth.CreateToken(id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Token generation failed"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "user with this name or email already exists"})
 		return
 	}
 
 	builder.WriteString("Bearer ")
-	builder.WriteString(token)
+	builder.WriteString(users)
 	authHeader := builder.String()
 
 	c.Header("Authorization", authHeader)

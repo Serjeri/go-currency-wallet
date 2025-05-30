@@ -6,13 +6,17 @@ import (
 	"gw-currency-wallet/internal/services/handlers"
 )
 
-func Routers(r *gin.Engine, client *handlers.Client) {
+func Routers(r *gin.Engine, client handlers.UserService) {
 	api := r.Group("/api/v1")
 
 	publicApi := api.Group("/")
 	{
-		publicApi.POST("/register", client.UserRegistr)
-		publicApi.POST("/login", client.AuthenticateUser)
+		publicApi.POST("/register", func(c *gin.Context) {
+			handlers.UserRegistration(c, client)
+		})
+		publicApi.POST("/login", func(c *gin.Context) {
+			handlers.UserAuthenticate(c, client)
+		})
 	}
 
 	// privateApi := api.Group("/")

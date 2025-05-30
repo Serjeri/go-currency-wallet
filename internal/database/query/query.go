@@ -2,22 +2,22 @@ package query
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"gw-currency-wallet/internal/database"
 	"gw-currency-wallet/internal/models"
 	"strings"
-	"errors"
 )
 
-type Repository struct {
+type UserRepository struct {
 	client database.Client
 }
 
-func NewRepository(client database.Client) *Repository {
-	return &Repository{client: client}
+func NewRepository(client database.Client) *UserRepository {
+	return &UserRepository{client: client}
 }
 
-func (r *Repository) RegistrUser(ctx context.Context, user models.User) (int, error) {
+func (r *UserRepository) Create(ctx context.Context, user *models.User) (int, error) {
 	tx, err := r.client.Begin(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("failed to begin transaction: %w", err)
@@ -71,7 +71,7 @@ func (r *Repository) RegistrUser(ctx context.Context, user models.User) (int, er
 	return id, nil
 }
 
-func (r *Repository) GetUser(ctx context.Context, user models.Login) (int, error) {
+func (r *UserRepository) Get(ctx context.Context, user *models.Login) (int, error) {
 	var dbPassword string
 	var id int
 

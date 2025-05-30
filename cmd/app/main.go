@@ -2,12 +2,12 @@ package main
 
 import (
 	//"context"
+	"github.com/gin-gonic/gin"
 	"gw-currency-wallet/internal/database"
 	"gw-currency-wallet/internal/database/query"
-	"gw-currency-wallet/internal/services/handlers"
+	"gw-currency-wallet/internal/services"
 	"gw-currency-wallet/internal/transport/rest"
 	"log"
-	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -20,9 +20,9 @@ func main() {
 	// defer conn.Close(context.Background())
 
 	repo := query.NewRepository(conn)
-	handl := handlers.NewClient(repo)
+	userService := services.NewUserService(repo)
 
-	rest.Routers(router, handl)
+	rest.Routers(router, userService)
 
 	router.Run(":8080")
 }
