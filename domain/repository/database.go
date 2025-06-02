@@ -1,4 +1,4 @@
-package database
+package repository
 
 import (
 	"context"
@@ -18,7 +18,7 @@ type Client interface {
 
 func Connect() (*pgx.Conn, error) {
 
-	err := godotenv.Load("../../internal/config/.env")
+	err := godotenv.Load("../../domain/config/.env")
 	if err != nil {
 		return nil, fmt.Errorf("failed to load .env file: %w", err)
 	}

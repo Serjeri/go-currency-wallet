@@ -4,16 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gw-currency-wallet/internal/database"
-	"gw-currency-wallet/internal/models"
+	"gw-currency-wallet/domain/models"
+	"gw-currency-wallet/domain/repository"
+
 	"strings"
 )
 
 type UserRepository struct {
-	client database.Client
+	client repository.Client
 }
 
-func NewRepository(client database.Client) *UserRepository {
+func NewRepository(client repository.Client) *UserRepository {
 	return &UserRepository{client: client}
 }
 
@@ -85,23 +86,71 @@ func (r *UserRepository) Get(ctx context.Context, user *models.Login) (int, erro
 	return id, nil
 }
 
-// func (r *Repository) UpdateTask(ctx context.Context, id int, title string, description string) (bool, error) {
-// 	var exists bool
-// 	err := r.client.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM tasks WHERE id = $1)`, id).Scan(&exists)
-// 	if err != nil {
-// 		return false, fmt.Errorf("failed to check task existence: %w", err)
-// 	}
+func (r *UserRepository) CheckUser(ctx context.Context, id int) (bool, error) {
+	var exists bool
 
-// 	if !exists {
-// 		return false, nil
-// 	}
-// 	_, err = r.client.Exec(ctx, `UPDATE tasks SET title = $1, description = $2, status='in_progress' WHERE id = $3`, title, description, id)
-// 	if err != nil {
-// 		return false, fmt.Errorf("Ошибка обновления таски: %w", err)
-// 	}
+	err := r.client.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)`, id).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to create user: %w", err)
+	}
 
-// 	return true, nil
-// }
+	if !exists {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (r *UserRepository) GetBalance(ctx context.Context, id int) (*models.Balance, error) {
+	var balance models.Balance
+	err := r.client.QueryRow(ctx, `SELECT usd, rub, eur FROM wallet WHERE user_id = $1`, id).Scan(
+		&balance.USD, &balance.RUB, &balance.EUR)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	return &balance, nil
+}
+
+func (r *UserRepository) UpdateBalance(ctx context.Context, id int, updateBalance *models.UpdateBalance) (*models.Balance, error) {
+	tx, err := r.client.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	var currentBalance models.Balance
+	err = tx.QueryRow(ctx,
+		`SELECT usd, rub, eur FROM wallet WHERE user_id = $1`, id).
+		Scan(&currentBalance.USD, &currentBalance.RUB, &currentBalance.EUR)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get current balance: %w", err)
+	}
+
+	var newAmount float64
+    switch updateBalance.Currency {
+    case "USD":
+        newAmount = currentBalance.USD + updateBalance.Amount
+        currentBalance.USD = newAmount
+    case "RUB":
+        newAmount = currentBalance.RUB + updateBalance.Amount
+        currentBalance.RUB = newAmount
+    case "EUR":
+        newAmount = currentBalance.EUR + updateBalance.Amount
+        currentBalance.EUR = newAmount
+    }
+
+	query := fmt.Sprintf("UPDATE wallet SET %s = $1 WHERE user_id = $2", updateBalance.Currency)
+    _, err = tx.Exec(ctx, query, newAmount, id)
+    if err != nil {
+        return nil, fmt.Errorf("failed to update balance: %w", err)
+    }
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return &currentBalance, nil
+}
 
 // func (r *Repository) DeleteTask(ctx context.Context, id int) (bool, error) {
 // 	var exists bool

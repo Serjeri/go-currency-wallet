@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"gw-currency-wallet/internal/handlers"
 	"gw-currency-wallet/internal/models"
+	"gw-currency-wallet/internal/services"
 	service "gw-currency-wallet/internal/services"
-	"gw-currency-wallet/internal/services/handlers"
 	"gw-currency-wallet/internal/transport/rest"
 	"net/http"
 	"net/http/httptest"
@@ -91,7 +92,7 @@ func TestRegisterUser_Validation(t *testing.T) {
 
 func TestAuthenticateUser_Validation(t *testing.T) {
 	repo := testRepo{}
-	client := handlers.NewClient(repo)
+	client := services.NewUserService(repo)
 	router := gin.Default()
 	rest.Routers(router, client)
 

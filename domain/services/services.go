@@ -3,14 +3,17 @@ package services
 import (
 	"context"
 	"errors"
-	"gw-currency-wallet/internal/models"
-	"gw-currency-wallet/internal/services/auth"
-	"gw-currency-wallet/internal/services/handlers"
+	"gw-currency-wallet/domain/handlers"
+	"gw-currency-wallet/domain/models"
+	"gw-currency-wallet/domain/services/auth"
 )
 
 type UserRepository interface {
 	Create(ctx context.Context, user *models.User) (int, error)
 	Get(ctx context.Context, user *models.Login) (int, error)
+	CheckUser(ctx context.Context, id int) (bool, error)
+	GetBalance(ctx context.Context, id int) (*models.Balance, error)
+	UpdateBalance(ctx context.Context, id int, updateBalace *models.UpdateBalance) (*models.Balance, error)
 }
 
 type UserService struct {
@@ -57,4 +60,31 @@ func (s *UserService) GetUser(ctx context.Context, user *models.Login) (string, 
 	}
 
 	return token, nil
+}
+
+func (s *UserService) GetBalanceUser(ctx context.Context, id int) (*models.Balance, error) {
+	// _, err := s.repo.CheckUser(context.TODO(), id)
+	// if err != nil {
+	// 	err := errors.New("token generation failed")
+	// 	return nil, err
+	// }
+
+	balance, err := s.repo.GetBalance(context.TODO(), id)
+	if err != nil {
+		err := errors.New("token generation failed")
+		return nil, err
+	}
+
+	return balance, nil
+}
+
+func (s *UserService) UpdateBalanceUser(ctx context.Context, id int, updateBalace *models.UpdateBalance) (*models.Balance, error) {
+
+	balance, err := s.repo.UpdateBalance(context.TODO(), id, updateBalace)
+	if err != nil {
+		err := errors.New("token generation failed")
+		return nil, err
+	}
+
+	return balance, nil
 }
