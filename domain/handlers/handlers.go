@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"gw-currency-wallet/domain/models"
 	"gw-currency-wallet/domain/services/auth"
 
@@ -87,9 +86,9 @@ func GetUserBalance(c *gin.Context, s UserService) {
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"balance": gin.H{
-			"EUR": float64(balance.EUR),
-			"RUB": float64(balance.RUB),
-			"USD": float64(balance.USD),
+			"EUR": float64(balance.EUR)/100,
+			"RUB": float64(balance.RUB)/100,
+			"USD": float64(balance.USD)/100,
 		},
 	})
 }
@@ -115,15 +114,12 @@ func UpdateUserBalance(c *gin.Context, s UserService) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get balance"})
 		return
 	}
-	formatFloat := func(f float64) string {
-        return fmt.Sprintf("%.2f", f)
-    }
 
     c.JSON(http.StatusOK, gin.H{
         "balance": gin.H{
-            "EUR": formatFloat(updatedBalance.EUR),
-            "RUB": formatFloat(updatedBalance.RUB),
-            "USD": formatFloat(updatedBalance.USD),
+            "EUR": float64(updatedBalance.EUR)/100,
+			"RUB": float64(updatedBalance.RUB)/100,
+			"USD": float64(updatedBalance.USD)/100,
         },
     })
 }

@@ -23,21 +23,14 @@ func Routers(r *gin.Engine, client handlers.UserService) {
 	privateApi := api.Group("/")
 	privateApi.Use(auth.AuthenticateMiddleware)
 	{
-	    wallet := privateApi.Group("/wallet")
-	    {
-	        wallet.GET("/balance", func(c *gin.Context) {
+		wallet := privateApi.Group("/wallet")
+		{
+			wallet.GET("/balance", func(c *gin.Context) {
 				handlers.GetUserBalance(c, client)
 			})
-	        wallet.POST("/deposit", func(c *gin.Context) {
+			wallet.POST("/update", func(c *gin.Context) {
 				handlers.UpdateUserBalance(c, client)
 			})
-	        // wallet.POST("/withdraw", client.Withdraw)
-	    }
-
-	//     exchange := privateApi.Group("/exchange")
-	//     {
-	//         exchange.GET("/rates", client.GetExchangeRates)
-	//         exchange.POST("/", client.ExchangeCurrency)
-	//     }
+		}
 	}
 }

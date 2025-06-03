@@ -105,7 +105,7 @@ _Authorization: Bearer JWT_TOKEN_
 ▎4. Пополнение счета
 
 Метод: **POST**
-URL: **/api/v1/wallet/deposit**
+URL: **/api/v1/wallet/update**
 Заголовки:
 _Authorization: Bearer JWT_TOKEN_
 
@@ -114,6 +114,7 @@ _Authorization: Bearer JWT_TOKEN_
 {
   "amount": 100.00,
   "currency": "USD" // (USD, RUB, EUR)
+  "status": "deposit"
 }
 ```
 
@@ -124,9 +125,9 @@ _Authorization: Bearer JWT_TOKEN_
 {
   "message": "Account topped up successfully",
   "new_balance": {
-    "USD": "float",
-    "RUB": "float",
-    "EUR": "float"
+    "USD": "int",
+    "RUB": "int",
+    "EUR": "int"
   }
 }
 ```
@@ -148,7 +149,7 @@ _Authorization: Bearer JWT_TOKEN_
 ▎5. Вывод средств
 
 Метод: **POST**
-URL: **/api/v1/wallet/withdraw**
+URL: **/api/v1/wallet/update**
 Заголовки:
 _Authorization: Bearer JWT_TOKEN_
 
@@ -156,7 +157,8 @@ _Authorization: Bearer JWT_TOKEN_
 ```
 {
     "amount": 50.00,
-    "currency": "USD" // USD, RUB, EUR)
+    "currency": "USD" // USD, RUB, EUR
+    "status": "withdrawal"
 }
 ```
 
@@ -186,122 +188,6 @@ _Authorization: Bearer JWT_TOKEN_
 Позволяет пользователю вывести средства со своего счета.
 Проверяется наличие достаточного количества средств и корректность суммы.
 
----
-
-▎6. Получение курса валют
-
-Метод: **GET**
-URL: **/api/v1/exchange/rates**
-Заголовки:
-_Authorization: Bearer JWT_TOKEN_
-
-Ответ:
-
-• Успех: ```200 OK```
-```json
-{
-    "rates":
-    {
-      "USD": "float",
-      "RUB": "float",
-      "EUR": "float"
-    }
-}
-```
-
-• Ошибка: ```500 Internal Server Error```
-```json
-{
-  "error": "Failed to retrieve exchange rates"
-}
-```
-
-▎Описание
-
-Получение актуальных курсов валют из внешнего gRPC-сервиса.
-Возвращает курсы всех поддерживаемых валют.
-
----
-
-▎7. Обмен валют
-
-Метод: **POST**
-URL: **/api/v1/exchange**
-Заголовки:
-_Authorization: Bearer JWT_TOKEN_
-
-Тело запроса:
-```json
-{
-  "from_currency": "USD",
-  "to_currency": "EUR",
-  "amount": 100.00
-}
-```
-
-Ответ:
-
-• Успех: ```200 OK```
-```json
-{
-  "message": "Exchange successful",
-  "exchanged_amount": 85.00,
-  "new_balance":
-  {
-  "USD": 0.00,
-  "EUR": 85.00
-  }
-}
-```
-
-• Ошибка: 400 Bad Request
-```json
-{
-  "error": "Insufficient funds or invalid currencies"
-}
-```
-
-▎Описание
-
-Курс валют осуществляется по данным сервиса exchange (если в течении небольшого времени был запрос от клиента курса валют (**/api/v1/exchange**) до обмена, то
-брать курс из кэша, если же запроса курса валют не было или он запрашивался слишком давно, то нужно осуществить gRPC-вызов к внешнему сервису, который предоставляет актуальные курсы валют)
-Проверяется наличие средств для обмена, и обновляется баланс пользователя.
-
-#### Структура проекта
-
-```
-gw-currency-wallet/
-├── cmd/
-│     └── main.go
-├── pkg/
-│     ├── utils.go
-│     └── ...
-│         └── ...
-├── internal/
-│     ├── storages/
-│     │   ├── storage.go (интерфейс)
-│     │   ├── model.go
-│     │   └── postgres/
-│     │        ├── connector.go
-│     │        └── methods.go
-│     ├── config/
-│     │    ├── config.go
-│     │    └── defaults.go
-│     └── .../
-│         └── ...
-├── docs/
-│     ├── docs.go
-│     ├── swagger.json
-│     └── swagger.yaml
-├── tests/
-│     └── service_test.go
-├── go.mod
-├── Dockerfile
-├── config.env
-├── Makefile
-└── README.md
-```
-
 Также нужно учесть:
 1. Безопасность: Все запросы должны быть защищены JWT-токенами.
 2. Производительность: Время отклика сервиса не должно превышать 200 мс для большинства операций.
@@ -310,7 +196,3 @@ gw-currency-wallet/
 5. Документация: Создать документацию API с использованием Swagger или аналогичного инструмента.
 
 Сервис должен иметь продвинутое логирование + читать пересеммные окружения из config.env (для локального запуска)
-```shell
-GOOS=linux GOARCH=amd64 go build -o main ./cmd
-./main -c config.env
-```

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"gw-currency-wallet/domain/handlers"
 	"gw-currency-wallet/domain/models"
 	"gw-currency-wallet/domain/services/auth"
@@ -13,7 +14,7 @@ type UserRepository interface {
 	Get(ctx context.Context, user *models.Login) (int, error)
 	CheckUser(ctx context.Context, id int) (bool, error)
 	GetBalance(ctx context.Context, id int) (*models.Balance, error)
-	UpdateBalance(ctx context.Context, id int, updateBalace *models.UpdateBalance) (*models.Balance, error)
+	UpdateBalance(ctx context.Context, id int, updateBalance *models.UpdateBalance, newAmount int) error
 }
 
 type UserService struct {
@@ -63,12 +64,6 @@ func (s *UserService) GetUser(ctx context.Context, user *models.Login) (string, 
 }
 
 func (s *UserService) GetBalanceUser(ctx context.Context, id int) (*models.Balance, error) {
-	// _, err := s.repo.CheckUser(context.TODO(), id)
-	// if err != nil {
-	// 	err := errors.New("token generation failed")
-	// 	return nil, err
-	// }
-
 	balance, err := s.repo.GetBalance(context.TODO(), id)
 	if err != nil {
 		err := errors.New("token generation failed")
@@ -78,13 +73,55 @@ func (s *UserService) GetBalanceUser(ctx context.Context, id int) (*models.Balan
 	return balance, nil
 }
 
-func (s *UserService) UpdateBalanceUser(ctx context.Context, id int, updateBalace *models.UpdateBalance) (*models.Balance, error) {
+func (s *UserService) UpdateBalanceUser(ctx context.Context, id int, updateBalance *models.UpdateBalance) (*models.Balance, error) {
+    currentBalance, err := s.repo.GetBalance(ctx, id)
+    if err != nil {
+        return nil, fmt.Errorf("failed to get current balance: %w", err)
+    }
 
-	balance, err := s.repo.UpdateBalance(context.TODO(), id, updateBalace)
-	if err != nil {
-		err := errors.New("token generation failed")
-		return nil, err
-	}
+    var newAmount int
+    switch updateBalance.Status {
+    case "deposit":
+        switch updateBalance.Currency {
+        case "USD":
+            newAmount = currentBalance.USD + updateBalance.Amount
+            currentBalance.USD = newAmount
+        case "RUB":
+            newAmount = currentBalance.RUB + updateBalance.Amount
+            currentBalance.RUB = newAmount
+        case "EUR":
+            newAmount = currentBalance.EUR + updateBalance.Amount
+            currentBalance.EUR = newAmount
+        }
+    case "withdrawal":
+        switch updateBalance.Currency {
+        case "USD":
+			if currentBalance.USD < updateBalance.Amount {
+				return nil, errors.New("insufficient funds")
+			}
+            newAmount = currentBalance.USD - updateBalance.Amount
+            currentBalance.USD = newAmount
+        case "RUB":
+            newAmount = currentBalance.RUB - updateBalance.Amount
+            if newAmount < 0 {
+                return nil, errors.New("insufficient funds")
+            }
+            currentBalance.RUB = newAmount
+        case "EUR":
+            newAmount = currentBalance.EUR - updateBalance.Amount
+            if newAmount < 0 {
+                return nil, errors.New("insufficient funds")
+            }
+            currentBalance.EUR = newAmount
+        }
+    default:
+        return nil, fmt.Errorf("unknown status: %s", updateBalance.Status)
+    }
 
-	return balance, nil
+    err = s.repo.UpdateBalance(ctx, id, updateBalance, newAmount)
+    if err != nil {
+        return nil, fmt.Errorf("failed to update balance: %w", err)
+    }
+
+	return currentBalance, nil
 }

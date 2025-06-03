@@ -66,6 +66,12 @@ func ParseToken(tokenString string) (int, error) {
 	if !ok {
 		return 0, jwt.ErrInvalidKey
 	}
+	
+	// _, err := s.repo.CheckUser(context.TODO(), id)
+	// if err != nil {
+	// 	err := errors.New("token generation failed")
+	// 	return nil, err
+	// }
 
 	return int(id), nil
 }

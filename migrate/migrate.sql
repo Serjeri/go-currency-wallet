@@ -8,9 +8,9 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS wallet (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,
-    usd FLOAT DEFAULT 0.0,
-    rub FLOAT DEFAULT 0.0,
-    eur FLOAT DEFAULT 0.0,
+    usd BIGINT DEFAULT 0,
+    rub BIGINT DEFAULT 0,
+    eur BIGINT DEFAULT 0,
     CONSTRAINT fk_user
         FOREIGN KEY(user_id)
         REFERENCES users(id)

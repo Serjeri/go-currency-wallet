@@ -1,7 +1,7 @@
 package models
 
 type Balance struct{
-	USD float64 `db:"usd"`
-    RUB float64 `db:"rub"`
-    EUR float64 `db:"eur"`
+	USD int `db:"usd"`
+    RUB int `db:"rub"`
+    EUR int `db:"eur"`
 }
