@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"gw-currency-wallet/domain/models"
 	"gw-currency-wallet/domain/services/auth"
 
@@ -39,7 +41,7 @@ func UserRegistration(c *gin.Context, s UserService) {
 
 	c.Header("Authorization", authHeader)
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Registration successful",
+		"message": "User registered successfully",
 		"token":   users,
 	})
 }
@@ -49,24 +51,43 @@ func UserAuthenticate(c *gin.Context, s UserService) {
 	var builder strings.Builder
 
 	if err := c.ShouldBind(&login); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data"})
-		return
-	}
+        c.JSON(http.StatusBadRequest, gin.H{
+            "error":   "invalid_request",
+            "message": "Invalid request data format",
+        })
+        return
+    }
 
-	users, err := s.GetUser(context.TODO(), &login)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "user with this name or email already exists"})
-		return
-	}
+	token, err := s.GetUser(c.Request.Context(), &login)
+    if err != nil {
+        switch {
+        case errors.Is(err, sql.ErrNoRows):
+            c.JSON(http.StatusUnauthorized, gin.H{
+                "error":   "invalid_credentials",
+                "message": "Invalid email or password",
+            })
+        case strings.Contains(err.Error(), "token generation"):
+            c.JSON(http.StatusInternalServerError, gin.H{
+                "error":   "token_error",
+                "message": "Failed to generate authentication token",
+            })
+        default:
+            c.JSON(http.StatusInternalServerError, gin.H{
+                "error":   "authentication_error",
+                "message": "Failed to authenticate user",
+            })
+        }
+        return
+    }
 
 	builder.WriteString("Bearer ")
-	builder.WriteString(users)
+	builder.WriteString(token)
 	authHeader := builder.String()
 
 	c.Header("Authorization", authHeader)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Successful",
-		"token":   users,
+		"token":   token,
 	})
 }
 

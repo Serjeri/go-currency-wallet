@@ -2,7 +2,6 @@ package query
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"gw-currency-wallet/domain/models"
 	"gw-currency-wallet/domain/repository"
@@ -80,24 +79,10 @@ func (r *UserRepository) Get(ctx context.Context, user *models.Login) (int, erro
 		strings.ToUpper(user.Name)).Scan(&id, &dbPassword)
 
 	if dbPassword != user.Password {
-		return 0, errors.New("username or password is incorrect")
+		return 0, fmt.Errorf("username or password is incorrect")
 	}
 
 	return id, nil
-}
-
-func (r *UserRepository) CheckUser(ctx context.Context, id int) (bool, error) {
-	var exists bool
-
-	err := r.client.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)`, id).Scan(&exists)
-	if err != nil {
-		return false, fmt.Errorf("failed to create user: %w", err)
-	}
-
-	if !exists {
-		return false, nil
-	}
-	return true, nil
 }
 
 func (r *UserRepository) GetBalance(ctx context.Context, id int) (*models.Balance, error) {
@@ -113,10 +98,17 @@ func (r *UserRepository) GetBalance(ctx context.Context, id int) (*models.Balanc
 
 func (r *UserRepository) UpdateBalance(ctx context.Context, id int, updateBalance *models.UpdateBalance, newAmount int) error {
 	query := fmt.Sprintf("UPDATE wallet SET %s = $1 WHERE user_id = $2", updateBalance.Currency)
-    _, err := r.client.Exec(ctx, query, newAmount, id)
+
+    result, err := r.client.Exec(ctx, query, newAmount, id)
     if err != nil {
-        return fmt.Errorf("failed to update balance: %w", err)
+        return fmt.Errorf("failed to update %s balance for user %d: %w",
+            updateBalance.Currency, id, err)
     }
 
-	return nil
+    rowsAffected := result.RowsAffected()
+    if rowsAffected == 0 {
+        return fmt.Errorf("no wallet found for user %d", id)
+    }
+
+    return nil
 }
