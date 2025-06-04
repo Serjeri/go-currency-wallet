@@ -51,34 +51,34 @@ func UserAuthenticate(c *gin.Context, s UserService) {
 	var builder strings.Builder
 
 	if err := c.ShouldBind(&login); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "error":   "invalid_request",
-            "message": "Invalid request data format",
-        })
-        return
-    }
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid_request",
+			"message": "Invalid request data format",
+		})
+		return
+	}
 
 	token, err := s.GetUser(c.Request.Context(), &login)
-    if err != nil {
-        switch {
-        case errors.Is(err, sql.ErrNoRows):
-            c.JSON(http.StatusUnauthorized, gin.H{
-                "error":   "invalid_credentials",
-                "message": "Invalid email or password",
-            })
-        case strings.Contains(err.Error(), "token generation"):
-            c.JSON(http.StatusInternalServerError, gin.H{
-                "error":   "token_error",
-                "message": "Failed to generate authentication token",
-            })
-        default:
-            c.JSON(http.StatusInternalServerError, gin.H{
-                "error":   "authentication_error",
-                "message": "Failed to authenticate user",
-            })
-        }
-        return
-    }
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error":   "invalid_credentials",
+				"message": "Invalid email or password",
+			})
+		case strings.Contains(err.Error(), "token generation"):
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "token_error",
+				"message": "Failed to generate authentication token",
+			})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error":   "authentication_error",
+				"message": "Failed to authenticate user",
+			})
+		}
+		return
+	}
 
 	builder.WriteString("Bearer ")
 	builder.WriteString(token)
@@ -96,7 +96,7 @@ func GetUserBalance(c *gin.Context, s UserService) {
 
 	userID, err := auth.ParseToken(token)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user with this name or email already exists"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
 		return
 	}
 
@@ -107,9 +107,9 @@ func GetUserBalance(c *gin.Context, s UserService) {
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"balance": gin.H{
-			"EUR": float64(balance.EUR)/100,
-			"RUB": float64(balance.RUB)/100,
-			"USD": float64(balance.USD)/100,
+			"EUR": float64(balance.EUR) / 100,
+			"RUB": float64(balance.RUB) / 100,
+			"USD": float64(balance.USD) / 100,
 		},
 	})
 }
@@ -136,11 +136,11 @@ func UpdateUserBalance(c *gin.Context, s UserService) {
 		return
 	}
 
-    c.JSON(http.StatusOK, gin.H{
-        "balance": gin.H{
-            "EUR": float64(updatedBalance.EUR)/100,
-			"RUB": float64(updatedBalance.RUB)/100,
-			"USD": float64(updatedBalance.USD)/100,
-        },
-    })
+	c.JSON(http.StatusOK, gin.H{
+		"balance": gin.H{
+			"EUR": float64(updatedBalance.EUR) / 100,
+			"RUB": float64(updatedBalance.RUB) / 100,
+			"USD": float64(updatedBalance.USD) / 100,
+		},
+	})
 }
