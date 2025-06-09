@@ -23,8 +23,9 @@ func main() {
 
 	client, closer := gprc.New("localhost", "50051")
 	defer closer()
+
 	userService := services.NewUserService(repo, client)
 
-	rest.Routers(router, userService)
+	rest.Routers(router, userService, userService)
 	router.Run(":8080")
 }

@@ -96,13 +96,35 @@ func (r *UserRepository) GetBalance(ctx context.Context, id int) (*models.Balanc
 	return &balance, nil
 }
 
-func (r *UserRepository) UpdateBalance(ctx context.Context, id int, updateBalance *models.UpdateBalance, newAmount int) error {
+func (r *UserRepository) UpdateBalance(ctx context.Context,
+	id int,
+	updateBalance *models.UpdateBalance,
+ 	newAmount int) error {
+
 	query := fmt.Sprintf("UPDATE wallet SET %s = $1 WHERE user_id = $2", updateBalance.Currency)
 
     result, err := r.client.Exec(ctx, query, newAmount, id)
     if err != nil {
         return fmt.Errorf("failed to update %s balance for user %d: %w",
             updateBalance.Currency, id, err)
+    }
+
+    rowsAffected := result.RowsAffected()
+    if rowsAffected == 0 {
+        return fmt.Errorf("no wallet found for user %d", id)
+    }
+
+    return nil
+}
+
+
+func (r *UserRepository) UpdateBalanceExchange(ctx context.Context, id int, FromCurrency, ToCurrency string, FromAmount, ToAmount int) error {
+
+	query := fmt.Sprintf("UPDATE wallet SET %s = $1, %s = $2 WHERE user_id = $3", ToCurrency, FromCurrency)
+
+    result, err := r.client.Exec(ctx, query, ToAmount, FromAmount, id)
+    if err != nil {
+        return fmt.Errorf("failed to update  balance for user : %w", err)
     }
 
     rowsAffected := result.RowsAffected()

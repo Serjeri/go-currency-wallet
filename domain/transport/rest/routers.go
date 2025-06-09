@@ -6,7 +6,7 @@ import (
 	"gw-currency-wallet/domain/services/auth"
 )
 
-func Routers(r *gin.Engine, client handlers.UserService) {
+func Routers(r *gin.Engine, client handlers.UserService, service handlers.GrpcService) {
 	api := r.Group("/api/v1")
 
 	publicApi := api.Group("/")
@@ -31,11 +31,16 @@ func Routers(r *gin.Engine, client handlers.UserService) {
 				handlers.UpdateUserBalance(c, client)
 			})
 		}
-		exchange := privateApi.Group("/exchange")
-		exchange.GET("/rates", func(c *gin.Context) {
-			handlers.GetExchangeRates(c, client)
-		})
 
+		exchange := privateApi.Group("/exchange")
+		{
+			exchange.GET("/rates", func(c *gin.Context) {
+				handlers.GetExchangeRates(c, service)
+			})
+			exchange.POST("/", func(c *gin.Context) {
+				handlers.PerformExchange(c, service)
+			})
+		}
 	}
 
 }
