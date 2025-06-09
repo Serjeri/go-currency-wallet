@@ -4,6 +4,7 @@ import (
 	"gw-currency-wallet/domain/repository"
 	"gw-currency-wallet/domain/repository/query"
 	"gw-currency-wallet/domain/services"
+	"gw-currency-wallet/domain/transport/gprc"
 	"gw-currency-wallet/domain/transport/rest"
 	"log"
 
@@ -19,9 +20,11 @@ func main() {
 	}
 
 	repo := query.NewRepository(conn)
-	userService := services.NewUserService(repo)
+
+	client, closer := gprc.New("localhost", "50051")
+	defer closer()
+	userService := services.NewUserService(repo, client)
 
 	rest.Routers(router, userService)
-
 	router.Run(":8080")
 }

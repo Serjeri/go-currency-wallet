@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	pb "github.com/Serjeri/proto-exchange/exchange"
 	"gw-currency-wallet/domain/models"
 	"gw-currency-wallet/domain/services/auth"
 
@@ -18,6 +19,7 @@ type UserService interface {
 	GetUser(ctx context.Context, user *models.Login) (string, error)
 	GetBalanceUser(ctx context.Context, id int) (*models.Balance, error)
 	UpdateBalanceUser(ctx context.Context, id int, updateBalance *models.UpdateBalance) (*models.Balance, error)
+	GetRates(ctx context.Context) (*pb.ExchangeRatesResponse, error)
 }
 
 func UserRegistration(c *gin.Context, s UserService) {
@@ -142,5 +144,15 @@ func UpdateUserBalance(c *gin.Context, s UserService) {
 			"RUB": float64(updatedBalance.RUB) / 100,
 			"USD": float64(updatedBalance.USD) / 100,
 		},
+	})
+}
+
+func GetExchangeRates(c *gin.Context, s UserService) {
+	rates, err := s.GetRates(context.Background())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get balance"})
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"rates": rates.Rates,
 	})
 }

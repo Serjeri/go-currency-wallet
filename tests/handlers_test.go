@@ -348,7 +348,6 @@ func TestUpdateUserBalance(t *testing.T) {
 			authService := new(MockAuthService)
 			userService := new(MockUserService)
 
-			// Настраиваем мок только если ожидаем вызов ParseToken
 			if tt.expectAuthCall {
 				token := tt.setupAuth()
 				authService.On("ParseToken", strings.TrimPrefix(token, "Bearer ")).
@@ -411,7 +410,6 @@ func TestUpdateUserBalance(t *testing.T) {
 				assert.JSONEq(t, tt.expectedBody, w.Body.String())
 			}
 
-			// Проверяем ожидания только если они должны были быть
 			if tt.expectAuthCall {
 				authService.AssertExpectations(t)
 			}

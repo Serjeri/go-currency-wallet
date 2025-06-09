@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	pb "github.com/Serjeri/proto-exchange/exchange"
 	"gw-currency-wallet/domain/handlers"
 	"gw-currency-wallet/domain/models"
 	"gw-currency-wallet/domain/services/auth"
@@ -18,10 +19,11 @@ type UserRepository interface {
 
 type UserService struct {
 	repo UserRepository
+	grpc pb.ExchangeServiceClient
 }
 
-func NewUserService(repo UserRepository) *UserService {
-	return &UserService{repo: repo}
+func NewUserService(repo UserRepository, grpc pb.ExchangeServiceClient) *UserService {
+	return &UserService{repo: repo, grpc: grpc}
 }
 
 func (s *UserService) CreateUser(ctx context.Context, user *models.User) (string, error) {
@@ -117,4 +119,8 @@ func (s *UserService) UpdateBalanceUser(ctx context.Context, id int, updateBalan
 	}
 
 	return currentBalance, nil
+}
+
+func (s *UserService) GetRates(ctx context.Context) (*pb.ExchangeRatesResponse, error) {
+	return s.grpc.GetExchangeRates(ctx, &pb.Empty{})
 }

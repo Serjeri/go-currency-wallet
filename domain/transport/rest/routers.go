@@ -1,10 +1,9 @@
 package rest
 
 import (
+	"github.com/gin-gonic/gin"
 	"gw-currency-wallet/domain/handlers"
 	"gw-currency-wallet/domain/services/auth"
-
-	"github.com/gin-gonic/gin"
 )
 
 func Routers(r *gin.Engine, client handlers.UserService) {
@@ -32,5 +31,11 @@ func Routers(r *gin.Engine, client handlers.UserService) {
 				handlers.UpdateUserBalance(c, client)
 			})
 		}
+		exchange := privateApi.Group("/exchange")
+		exchange.GET("/rates", func(c *gin.Context) {
+			handlers.GetExchangeRates(c, client)
+		})
+
 	}
+
 }

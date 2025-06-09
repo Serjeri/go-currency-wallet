@@ -3,11 +3,13 @@ module gw-currency-wallet
 go 1.24.3
 
 require (
+	github.com/Serjeri/proto-exchange v0.0.0-20250606133607-cd550d1e259a
 	github.com/gin-gonic/gin v1.10.1
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/joho/godotenv v1.5.1
 	github.com/stretchr/testify v1.10.0
+	google.golang.org/grpc v1.65.0
 )
 
 require (
@@ -41,6 +43,7 @@ require (
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240604185151-ef581f913117 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
