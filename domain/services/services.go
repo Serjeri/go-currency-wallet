@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	pb "github.com/Serjeri/proto-exchange/exchange"
+	"gw-currency-wallet/domain/broker/kafka"
 	"gw-currency-wallet/domain/handlers"
 	"gw-currency-wallet/domain/models"
 	"gw-currency-wallet/domain/services/auth"
@@ -156,6 +157,13 @@ func (s *UserService) Exchange(ctx context.Context, user *models.Exchange, id in
 		return nil, fmt.Errorf("unsupported currency: %s", user.FromCurrency)
 	}
 
+	if user.Amount >= 30000 {
+		err := kafka.Producer(id, user)
+		if err != nil {
+			return nil, fmt.Errorf("failed to send exchange request to kafka: %w", err)
+		}
+	}
+
 	exchange, err := s.grpc.PerformExchange(ctx, &pb.ExchangeRequest{
 		Amount: int64(user.Amount), FromCurrency: user.FromCurrency, ToCurrency: user.ToCurrency,
 	})
@@ -163,21 +171,21 @@ func (s *UserService) Exchange(ctx context.Context, user *models.Exchange, id in
 		return nil, fmt.Errorf("failed to perform exchange: %w", err)
 	}
 
-    exchangedAmount := int(exchange.NewBalance[user.ToCurrency] * 10000)
-    var toAmount int
-    switch user.ToCurrency {
-    case "USD":
-        balance.USD += exchangedAmount
-        toAmount = balance.USD
-    case "RUB":
-        balance.RUB += exchangedAmount
-        toAmount = balance.RUB
-    case "EUR":
-        balance.EUR += exchangedAmount
-        toAmount = balance.EUR
-    default:
-        return nil, fmt.Errorf("unsupported target currency: %s", user.ToCurrency)
-    }
+	exchangedAmount := int(exchange.NewBalance[user.ToCurrency] * 10000)
+	var toAmount int
+	switch user.ToCurrency {
+	case "USD":
+		balance.USD += exchangedAmount
+		toAmount = balance.USD
+	case "RUB":
+		balance.RUB += exchangedAmount
+		toAmount = balance.RUB
+	case "EUR":
+		balance.EUR += exchangedAmount
+		toAmount = balance.EUR
+	default:
+		return nil, fmt.Errorf("unsupported target currency: %s", user.ToCurrency)
+	}
 
 	if err := s.repo.UpdateBalanceExchange(ctx, id, user.FromCurrency, user.ToCurrency, newAmount, toAmount); err != nil {
 		return nil, fmt.Errorf("failed to update balance: %w", err)
