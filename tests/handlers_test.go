@@ -5,8 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	__ "github.com/Serjeri/proto-exchange/exchange"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"google.golang.org/grpc"
 	"gw-currency-wallet/domain/models"
 	"gw-currency-wallet/domain/services"
 	"gw-currency-wallet/domain/transport/rest"
@@ -21,7 +23,27 @@ import (
 
 type testRepo struct {
 	result int
+	err error
+}
+
+// UpdateBalanceExchange implements services.UserRepository.
+func (t testRepo) UpdateBalanceExchange(ctx context.Context, id int, FromCurrency string, ToCurrency string, FromAmount int, ToAmount int) error {
+	panic("unimplemented")
+}
+
+type testRepoGrpc struct {
+	result int
 	err    error
+}
+
+// GetExchangeRates implements __.ExchangeServiceClient.
+func (t testRepoGrpc) GetExchangeRates(ctx context.Context, in *__.Empty, opts ...grpc.CallOption) (*__.ExchangeRatesResponse, error) {
+	panic("unimplemented")
+}
+
+// PerformExchange implements __.ExchangeServiceClient.
+func (t testRepoGrpc) PerformExchange(ctx context.Context, in *__.ExchangeRequest, opts ...grpc.CallOption) (*__.ExchangeResponse, error) {
+	panic("unimplemented")
 }
 
 func (t testRepo) Create(ctx context.Context, user *models.User) (int, error) {
@@ -65,9 +87,10 @@ func (m *MockUserService) UpdateBalanceUser(ctx context.Context, userID string, 
 
 func TestRegisterUser_Validation(t *testing.T) {
 	repo := testRepo{}
-	client := services.NewUserService(repo)
+	grpc := testRepoGrpc{}
+	client := services.NewUserService(repo, grpc)
 	router := gin.Default()
-	rest.Routers(router, client)
+	rest.Routers(router, client, client)
 
 	testCases := []struct {
 		name         string
@@ -122,9 +145,10 @@ func TestRegisterUser_Validation(t *testing.T) {
 
 func TestAuthenticateUser_Validation(t *testing.T) {
 	repo := testRepo{}
-	client := services.NewUserService(repo)
+	grpc := testRepoGrpc{}
+	client := services.NewUserService(repo, grpc)
 	router := gin.Default()
-	rest.Routers(router, client)
+	rest.Routers(router, client, client)
 
 	testCases := []struct {
 		name         string

@@ -7,9 +7,6 @@
 *.dylib
 *.out
 /build/
-gw-currency-wallet/gw-currency-wallet
-gw-exchanger/gw-exchanger
-gw-notification/gw-notification
 
 # Папка зависимостей Go
 /vendor/
