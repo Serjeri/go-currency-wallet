@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	pb "github.com/Serjeri/proto-exchange/exchange"
 	"gw-currency-wallet/domain/broker/kafka"
 	"gw-currency-wallet/domain/handlers"
 	"gw-currency-wallet/domain/models"
 	"gw-currency-wallet/domain/services/auth"
+
+	pb "github.com/Serjeri/proto-exchange/exchange"
+	"github.com/gofiber/fiber/v2/log"
 )
 
 type UserRepository interface {
@@ -163,14 +165,16 @@ func (s *UserService) Exchange(ctx context.Context, user *models.Exchange, id in
 			return nil, fmt.Errorf("failed to send exchange request to kafka: %w", err)
 		}
 	}
-
+	log.Info(1)
 	exchange, err := s.grpc.PerformExchange(ctx, &pb.ExchangeRequest{
 		Amount: int64(user.Amount), FromCurrency: user.FromCurrency, ToCurrency: user.ToCurrency,
 	})
 	if err != nil {
+		log.Info(2)
+		log.Info("failed to perform exchange: %w", err)
 		return nil, fmt.Errorf("failed to perform exchange: %w", err)
 	}
-
+	log.Info(3)
 	exchangedAmount := int(exchange.NewBalance[user.ToCurrency] * 10000)
 	var toAmount int
 	switch user.ToCurrency {
