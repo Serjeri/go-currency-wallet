@@ -1,6 +1,7 @@
 package main
 
 import (
+	"gw-currency-wallet/domain/config"
 	"gw-currency-wallet/domain/repository"
 	"gw-currency-wallet/domain/repository/query"
 	"gw-currency-wallet/domain/services"
@@ -12,20 +13,21 @@ import (
 )
 
 func main() {
-	router := gin.Default()
+	cfg := config.MustLoad()
 
-	conn, err := repository.Connect()
+	conn, err := repository.Connect(cfg.Dburl)
 	if err != nil {
 		log.Fatalf("Ошибка подключения к базе данных: %v", err)
 	}
 
+	router := gin.Default()
 	repo := query.NewRepository(conn)
 
-	client, closer := gprc.New("localhost", "50051")
+	client, closer := gprc.New(cfg.Addressgrpc)
 	defer closer()
 
 	userService := services.NewUserService(repo, client)
 
 	rest.Routers(router, userService, userService)
-	router.Run(":8080")
+	router.Run(cfg.Address)
 }

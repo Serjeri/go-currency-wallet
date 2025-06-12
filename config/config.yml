@@ -1,0 +1,6 @@
+database:
+  dburl: "postgres://postgres:mysecretpassword@db:5432/wallet"
+
+http_server:
+  address: "0.0.0.0:8080"
+  addressgrpc: "0.0.0.0:50051"

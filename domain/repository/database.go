@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/joho/godotenv"
-	"os"
 )
+
+
 
 type Client interface {
 	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
@@ -16,22 +16,7 @@ type Client interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 }
 
-func Connect() (*pgx.Conn, error) {
-
-	err := godotenv.Load("../../domain/config/.env")
-	if err != nil {
-		return nil, fmt.Errorf("failed to load .env file: %w", err)
-	}
-
-	host := os.Getenv("DB_HOST")
-	port := os.Getenv("DB_PORT")
-	user := os.Getenv("DB_USER")
-	password := os.Getenv("DB_PASSWORD")
-	dbname := os.Getenv("DB_NAME")
-
-	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s",
-		user, password, host, port, dbname)
-
+func Connect(dbURL string) (*pgx.Conn, error) {
 	conn, err := pgx.Connect(context.Background(), dbURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
