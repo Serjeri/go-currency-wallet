@@ -11,11 +11,11 @@ import (
 	"gw-currency-wallet/domain/models"
 )
 
-func Producer(userID int, exchange *models.Exchange) error {
+func Producer(userID int, exchange *models.Exchange) (bool, error) {
 	config := sarama.NewConfig()
 	config.Producer.Return.Successes = true
 
-	producer, err := sarama.NewSyncProducer([]string{"localhost:9092"}, config)
+	producer, err := sarama.NewSyncProducer([]string{"kafka:29092"}, config)
 	if err != nil {
 		log.Fatalln("Failed to start Sarama producer:", err)
 	}
@@ -35,7 +35,7 @@ func Producer(userID int, exchange *models.Exchange) error {
 
 	jsonData, err := json.Marshal(event)
 	if err != nil {
-		return fmt.Errorf("failed to marshal kafka event: %w", err)
+		return false, fmt.Errorf("failed to marshal kafka event: %w", err)
 	}
 
 	msg := &sarama.ProducerMessage{
@@ -45,8 +45,8 @@ func Producer(userID int, exchange *models.Exchange) error {
 
 	partition, offset, err := producer.SendMessage(msg)
 	if err != nil {
-		return fmt.Errorf("failed to send message: %w", err)
+		return false,fmt.Errorf("failed to send message: %w", err)
 	}
 	log.Printf("Message is stored in topic(%s)/partition(%d)/offset(%d)\n", msg.Topic, partition, offset)
-	return nil
+	return true, nil
 }

@@ -1,12 +1,12 @@
 package auth
 
 import (
+	"gw-currency-wallet/domain/lib/jwttoken"
 	"net/http"
 	"strings"
 
-	"github.com/golang-jwt/jwt/v5"
-
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func AuthenticateMiddleware(c *gin.Context) {
@@ -28,7 +28,7 @@ func AuthenticateMiddleware(c *gin.Context) {
 		return
 	}
 
-	token, err := VerifyToken(tokenString)
+	token, err := jwttoken.VerifyToken(tokenString)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error":    "Invalid or expired token",

@@ -2,12 +2,12 @@ package services
 
 import (
 	"context"
-	"errors"
 	"fmt"
+
 	"gw-currency-wallet/domain/broker/kafka"
-	"gw-currency-wallet/domain/handlers"
+	"gw-currency-wallet/domain/lib"
+	"gw-currency-wallet/domain/lib/jwttoken"
 	"gw-currency-wallet/domain/models"
-	"gw-currency-wallet/domain/services/auth"
 
 	pb "github.com/Serjeri/proto-exchange/exchange"
 	"github.com/gofiber/fiber/v2/log"
@@ -31,7 +31,7 @@ func NewUserService(repo UserRepository, grpc pb.ExchangeServiceClient) *UserSer
 }
 
 func (s *UserService) CreateUser(ctx context.Context, user *models.User) (string, error) {
-	hashedPassword := handlers.HashedPassword(user.Password)
+	hashedPassword := lib.HashedPassword(user.Password)
 	user.Password = hashedPassword
 
 	id, err := s.repo.Create(ctx, user)
@@ -39,7 +39,7 @@ func (s *UserService) CreateUser(ctx context.Context, user *models.User) (string
 		return "", fmt.Errorf("failed to create user: %w", err)
 	}
 
-	token, err := auth.CreateToken(id)
+	token, err := jwttoken.CreateToken(id)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate token: %w", err)
 	}
@@ -48,7 +48,7 @@ func (s *UserService) CreateUser(ctx context.Context, user *models.User) (string
 }
 
 func (s *UserService) GetUser(ctx context.Context, user *models.Login) (string, error) {
-	hashedPassword := handlers.HashedPassword(user.Password)
+	hashedPassword := lib.HashedPassword(user.Password)
 	user.Password = hashedPassword
 
 	id, err := s.repo.Get(ctx, user)
@@ -56,7 +56,7 @@ func (s *UserService) GetUser(ctx context.Context, user *models.Login) (string, 
 		return "", fmt.Errorf("failed to get user: %w", err)
 	}
 
-	token, err := auth.CreateToken(id)
+	token, err := jwttoken.CreateToken(id)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate auth token: %w", err)
 	}
@@ -79,43 +79,9 @@ func (s *UserService) UpdateBalanceUser(ctx context.Context, id int, updateBalan
 		return nil, fmt.Errorf("failed to get current balance: %w", err)
 	}
 
-	var newAmount int
-	switch updateBalance.Status {
-	case "deposit":
-		switch updateBalance.Currency {
-		case "USD":
-			newAmount = currentBalance.USD + updateBalance.Amount
-			currentBalance.USD = newAmount
-		case "RUB":
-			newAmount = currentBalance.RUB + updateBalance.Amount
-			currentBalance.RUB = newAmount
-		case "EUR":
-			newAmount = currentBalance.EUR + updateBalance.Amount
-			currentBalance.EUR = newAmount
-		}
-	case "withdrawal":
-		switch updateBalance.Currency {
-		case "USD":
-			if currentBalance.USD < updateBalance.Amount {
-				return nil, errors.New("insufficient funds")
-			}
-			newAmount = currentBalance.USD - updateBalance.Amount
-			currentBalance.USD = newAmount
-		case "RUB":
-			newAmount = currentBalance.RUB - updateBalance.Amount
-			if newAmount < 0 {
-				return nil, errors.New("insufficient funds")
-			}
-			currentBalance.RUB = newAmount
-		case "EUR":
-			newAmount = currentBalance.EUR - updateBalance.Amount
-			if newAmount < 0 {
-				return nil, errors.New("insufficient funds")
-			}
-			currentBalance.EUR = newAmount
-		}
-	default:
-		return nil, fmt.Errorf("unknown status: %s", updateBalance.Status)
+	newAmount, err := lib.UpdateBalance(currentBalance, updateBalance)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update balance: %w", err)
 	}
 
 	if err := s.repo.UpdateBalance(ctx, id, updateBalance, newAmount); err != nil {
@@ -135,60 +101,33 @@ func (s *UserService) Exchange(ctx context.Context, user *models.Exchange, id in
 		return nil, fmt.Errorf("failed to get balance: %w", err)
 	}
 
-	var newAmount int
-	switch user.FromCurrency {
-	case "USD":
-		if balance.USD < user.Amount {
-			return nil, errors.New("insufficient USD funds")
-		}
-		newAmount = balance.USD - user.Amount
-		balance.USD = newAmount
-	case "RUB":
-		if balance.RUB < user.Amount {
-			return nil, errors.New("insufficient RUB funds")
-		}
-		newAmount = balance.RUB - user.Amount
-		balance.RUB = newAmount
-	case "EUR":
-		if balance.EUR < user.Amount {
-			return nil, errors.New("insufficient EUR funds")
-		}
-		newAmount = balance.EUR - user.Amount
-		balance.EUR = newAmount
-	default:
-		return nil, fmt.Errorf("unsupported currency: %s", user.FromCurrency)
+	newAmount, err := lib.DeductFromBalance(balance, user.FromCurrency, user.Amount)
+	if err != nil {
+		log.Info("failed to change balace: %w", err)
+		return nil, fmt.Errorf("failed to change balace: %w", err)
 	}
 
-	if user.Amount >= 30000 {
-		err := kafka.Producer(id, user)
-		if err != nil {
-			return nil, fmt.Errorf("failed to send exchange request to kafka: %w", err)
-		}
-	}
-	log.Info(1)
 	exchange, err := s.grpc.PerformExchange(ctx, &pb.ExchangeRequest{
 		Amount: int64(user.Amount), FromCurrency: user.FromCurrency, ToCurrency: user.ToCurrency,
 	})
 	if err != nil {
-		log.Info(2)
 		log.Info("failed to perform exchange: %w", err)
 		return nil, fmt.Errorf("failed to perform exchange: %w", err)
 	}
-	log.Info(3)
+
 	exchangedAmount := int(exchange.NewBalance[user.ToCurrency] * 10000)
-	var toAmount int
-	switch user.ToCurrency {
-	case "USD":
-		balance.USD += exchangedAmount
-		toAmount = balance.USD
-	case "RUB":
-		balance.RUB += exchangedAmount
-		toAmount = balance.RUB
-	case "EUR":
-		balance.EUR += exchangedAmount
-		toAmount = balance.EUR
-	default:
-		return nil, fmt.Errorf("unsupported target currency: %s", user.ToCurrency)
+
+	toAmount := lib.AddToBalance(exchangedAmount, user.ToCurrency, balance)
+
+	if user.Amount >= 30000 {
+		success, err := kafka.Producer(id, user)
+		if err != nil {
+			return nil, fmt.Errorf("failed to send exchange request to kafka: %w", err)
+		}
+
+		if !success {
+			return nil, fmt.Errorf("kafka producer failed to send message")
+		}
 	}
 
 	if err := s.repo.UpdateBalanceExchange(ctx, id, user.FromCurrency, user.ToCurrency, newAmount, toAmount); err != nil {

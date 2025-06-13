@@ -3,4 +3,5 @@ database:
 
 http_server:
   address: "0.0.0.0:8080"
-  addressgrpc: "0.0.0.0:50051"
+  addressgrpc: "exchange:50051"
+  kafka: "kafka:9092"

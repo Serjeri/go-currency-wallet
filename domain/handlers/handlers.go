@@ -6,7 +6,7 @@ import (
 	"errors"
 	pb "github.com/Serjeri/proto-exchange/exchange"
 	"gw-currency-wallet/domain/models"
-	"gw-currency-wallet/domain/services/auth"
+	"gw-currency-wallet/domain/lib/jwttoken"
 
 	"net/http"
 	"strings"
@@ -100,7 +100,7 @@ func UserAuthenticate(c *gin.Context, s UserService) {
 func GetUserBalance(c *gin.Context, s UserService) {
 	token := c.GetHeader("Authorization")
 
-	userID, err := auth.ParseToken(token)
+	userID, err := jwttoken.ParseToken(token)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
 		return
@@ -130,7 +130,7 @@ func UpdateUserBalance(c *gin.Context, s UserService) {
 
 	token := c.GetHeader("Authorization")
 
-	userID, err := auth.ParseToken(token)
+	userID, err := jwttoken.ParseToken(token)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user with this name or email already exists"})
 		return
@@ -169,7 +169,7 @@ func PerformExchange(c *gin.Context, g GrpcService) {
 	}
 	token := c.GetHeader("Authorization")
 
-	userID, _ := auth.ParseToken(token)
+	userID, _ := jwttoken.ParseToken(token)
 
 	rates, err := g.Exchange(context.Background(), &exchange, userID)
 

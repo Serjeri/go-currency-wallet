@@ -1,4 +1,4 @@
-package auth
+package jwttoken
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+
 )
 
 var secretKey = []byte("your-secret-key")
@@ -14,7 +15,7 @@ func CreateToken(id int) (string, error) {
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": id,
 		"iss": "app",
-		"exp": time.Now().Add(time.Hour).Unix(),
+		"exp": time.Now().Add(24 * time.Hour).Unix(),
 		"iat": time.Now().Unix(),
 	})
 
