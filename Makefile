@@ -17,7 +17,7 @@ network:
 # 	@echo "Клонируем go-currency-wallet и запускаем Docker Compose..."
 # 	$(GIT) clone https://github.com/Serjeri/go-currency-wallet.git
 # 	cd go-currency-wallet && go mod tidy
-# 	cd go-currency-wallet/deployments && $(DOCKER_COMPOSE) wallet -f first-compose.yml up -d --build
+# 	cd deployments && $(DOCKER_COMPOSE) wallet -f first-compose.yml up -d --build
 # 	@echo "Ожидание $(TIMEOUT) секунд перед следующим проектом..."
 # 	$(SLEEP) $(TIMEOUT)
 
