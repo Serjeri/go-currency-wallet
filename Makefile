@@ -21,6 +21,12 @@ network:
 # 	@echo "Ожидание $(TIMEOUT) секунд перед следующим проектом..."
 # 	$(SLEEP) $(TIMEOUT)
 
+.PHONY: wallet
+wallet:
+	go mod tidy
+	go-currency-wallet/deployments && $(DOCKER_COMPOSE) wallet -f first-compose.yml up -d --build
+	@echo "Ожидание $(TIMEOUT) секунд перед следующим проектом..."
+	$(SLEEP) $(TIMEOUT)
 
 .PHONY: exchanger
 exchanger: wallet
