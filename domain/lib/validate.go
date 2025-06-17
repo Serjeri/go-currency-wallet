@@ -58,26 +58,11 @@ func UpdateBalance(currentBalance *models.Balance, updateBalance *models.UpdateB
 
 	switch updateBalance.Status {
 	case "deposit":
-		switch updateBalance.Currency {
-		case "USD":
-			newAmount = AddToBalance(updateBalance.Amount, updateBalance.Currency, currentBalance)
-		case "RUB":
-			newAmount = AddToBalance(updateBalance.Amount, updateBalance.Currency, currentBalance)
-		case "EUR":
-			newAmount = AddToBalance(updateBalance.Amount, updateBalance.Currency, currentBalance)
-		}
+		newAmount = AddToBalance(updateBalance.Amount, updateBalance.Currency, currentBalance)
 	case "withdrawal":
-		switch updateBalance.Currency {
-		case "USD":
-			newAmount, _ = DeductFromBalance(currentBalance, updateBalance.Currency, updateBalance.Amount)
-		case "RUB":
-			newAmount, _ = DeductFromBalance(currentBalance, updateBalance.Currency, updateBalance.Amount)
-		case "EUR":
-			newAmount, _ = DeductFromBalance(currentBalance, updateBalance.Currency, updateBalance.Amount)
-		}
+		newAmount, _ = DeductFromBalance(currentBalance, updateBalance.Currency, updateBalance.Amount)
 	default:
 		return 0, fmt.Errorf("unknown status: %s", updateBalance.Status)
 	}
-
 	return newAmount, nil
 }
